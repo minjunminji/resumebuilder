@@ -1,13 +1,15 @@
-import { ReactNode } from 'react';
-import LiquidGlass from 'liquid-glass-react';
+'use client'
+
+import { ReactNode } from 'react'
+import LiquidGlass from 'liquid-glass-react'
 
 interface GlassButtonProps {
-  children: ReactNode;
-  onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
-  type?: 'button' | 'submit' | 'reset';
-  disabled?: boolean;
-  className?: string;
+  children: ReactNode
+  onClick?: () => void
+  variant?: 'primary' | 'secondary' | 'danger'
+  type?: 'button' | 'submit' | 'reset'
+  disabled?: boolean
+  className?: string
 }
 
 export function GlassButton({
@@ -22,7 +24,7 @@ export function GlassButton({
     primary: 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-100',
     secondary: 'bg-white/10 hover:bg-white/20 text-white',
     danger: 'bg-red-500/20 hover:bg-red-500/30 text-red-100',
-  };
+  }
 
   return (
     <button
@@ -45,5 +47,5 @@ export function GlassButton({
         </span>
       </LiquidGlass>
     </button>
-  );
+  )
 }

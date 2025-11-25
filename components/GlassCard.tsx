@@ -1,15 +1,17 @@
-import { ReactNode, useRef } from 'react';
-import LiquidGlass from 'liquid-glass-react';
+'use client'
+
+import { ReactNode, useRef } from 'react'
+import LiquidGlass from 'liquid-glass-react'
 
 interface GlassCardProps {
-  children: ReactNode;
-  className?: string;
-  onClick?: () => void;
-  hover?: boolean;
+  children: ReactNode
+  className?: string
+  onClick?: () => void
+  hover?: boolean
 }
 
 export function GlassCard({ children, className = '', onClick, hover = false }: GlassCardProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null)
 
   return (
     <div ref={containerRef} className={className}>
@@ -27,5 +29,5 @@ export function GlassCard({ children, className = '', onClick, hover = false }: 
         {children}
       </LiquidGlass>
     </div>
-  );
+  )
 }
