@@ -34,7 +34,7 @@ const LiquidGlass = ({
   overLight = false,
   onClick,
 }: LiquidGlassProps) => {
-  const neonEdge = overLight ? "rgba(23,23,23,0.15)" : "rgba(255,255,255,0.08)";
+  const neonEdge = overLight ? "rgba(32,32,32,0.18)" : "rgba(255,255,255,0.08)";
   const glassStyle = useMemo<CSSProperties>(() => {
     return {
       borderRadius: cornerRadius,
@@ -43,8 +43,8 @@ const LiquidGlass = ({
       overflow: "hidden",
       border: `1px solid ${neonEdge}`,
       background: overLight
-        ? "linear-gradient(145deg, rgba(255,255,255,0.9), rgba(255,255,255,0.65))"
-        : "linear-gradient(140deg, rgba(24,24,27,0.6), rgba(39,39,42,0.7), rgba(24,24,27,0.6))",
+        ? "linear-gradient(145deg, rgba(255,255,255,0.9), rgba(235,235,235,0.72))"
+        : "linear-gradient(140deg, rgba(18,18,20,0.72), rgba(28,28,32,0.86), rgba(18,18,20,0.72))",
       boxShadow: `0 ${Math.max(16, displacementScale * 0.1)}px ${Math.max(40, displacementScale * 0.8)}px rgba(0,0,0,0.35), 0 0 1px ${neonEdge}`,
       backdropFilter: `blur(${blurAmount * 80}px) saturate(${saturation}%)`,
       WebkitBackdropFilter: `blur(${blurAmount * 80}px) saturate(${saturation}%)`,
@@ -52,16 +52,16 @@ const LiquidGlass = ({
       transition: `transform 280ms cubic-bezier(0.22,1,0.36,1), box-shadow 280ms ease`,
       ...style,
     };
-  }, [blurAmount, cornerRadius, elasticity, saturation, neonEdge, overLight, style]);
+  }, [blurAmount, cornerRadius, displacementScale, elasticity, neonEdge, overLight, padding, saturation, style]);
 
   const highlightStyle: CSSProperties = {
     position: "absolute",
     inset: "0",
     background:
-      "radial-gradient(120% 120% at 20% 20%, rgba(255,255,255,0.14), transparent 40%), " +
-      "radial-gradient(120% 120% at 80% 0%, rgba(56,189,248,0.16), transparent 35%), " +
-      "radial-gradient(120% 120% at 60% 100%, rgba(190,24,93,0.12), transparent 35%)",
-    filter: `contrast(${1 + aberrationIntensity * 0.1}) saturate(${1 + saturation / 200})`,
+      "radial-gradient(120% 120% at 20% 20%, rgba(255,255,255,0.16), transparent 40%), " +
+      "radial-gradient(120% 120% at 80% 0%, rgba(200,200,200,0.12), transparent 35%), " +
+      "radial-gradient(120% 120% at 60% 100%, rgba(150,150,150,0.12), transparent 35%)",
+    filter: `contrast(${1 + aberrationIntensity * 0.1}) saturate(${1 + saturation / 200}) grayscale(1)`,
     opacity: overLight ? 0.6 : 1,
     pointerEvents: "none",
   };
