@@ -14,15 +14,38 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
 
-  // Auto-redirect if the user already has a session.
+  const routeByOnboarding = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("onboarding_complete")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      // Fall back to onboarding if we cannot read profile.
+      router.replace("/onboarding");
+      return;
+    }
+
+    if (data?.onboarding_complete) {
+      router.replace("/dashboard");
+    } else {
+      router.replace("/onboarding");
+    }
+  };
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        router.replace("/onboarding");
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (data.session?.user?.id) {
+        await routeByOnboarding(data.session.user.id);
       }
+      setCheckingSession(false);
     });
-  }, [router]);
+    // routeByOnboarding intentionally excluded to avoid reruns when router changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const ctaLabel = useMemo(
     () => (mode === "sign-in" ? "Sign in" : "Create account"),
@@ -65,9 +88,17 @@ export default function Home() {
       setInfo("Check your inbox to confirm your account, then continue.");
     }
 
-    router.push("/onboarding");
+    await routeByOnboarding(authResult.data.session!.user.id);
     setLoading(false);
   };
+
+  if (checkingSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-100">
+        <p className="text-lg font-semibold">Checking session...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-50">

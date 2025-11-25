@@ -81,17 +81,30 @@ export default function OnboardingPage() {
     awards: [emptyEntry],
     skills: [emptyEntry],
   });
-  const [submitted, setSubmitted] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Guard the route; redirect to auth if unauthenticated.
+  // Guard the route; redirect to auth if unauthenticated. Skip if already onboarded.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) {
         router.replace("/");
-      } else {
-        setAuthChecked(true);
+        return;
       }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_complete")
+        .eq("user_id", data.session.user.id)
+        .maybeSingle();
+
+      if (profile?.onboarding_complete) {
+        router.replace("/dashboard");
+        return;
+      }
+
+      setAuthChecked(true);
     });
   }, [router]);
 
@@ -109,7 +122,6 @@ export default function OnboardingPage() {
       updated[index] = { ...updated[index], [field]: value };
       return { ...prev, [key]: updated };
     });
-    setSubmitted(false);
   };
 
   const handleAddEntry = (key: CategoryKey) => {
@@ -125,25 +137,105 @@ export default function OnboardingPage() {
       const updated = prev[key].filter((_, i) => i !== index);
       return { ...prev, [key]: updated };
     });
-    setSubmitted(false);
   };
 
   const handleBack = () => {
     setCurrentIndex((idx) => Math.max(0, idx - 1));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentIndex < categories.length - 1) {
       setCurrentIndex((idx) => idx + 1);
     } else {
-      handleSubmitAll();
+      await handleSubmitAll();
     }
   };
 
-  const handleSubmitAll = () => {
-    setSubmitted(true);
-    // TODO: Persist to Supabase tables.
-    console.table(entries);
+  const handleSubmitAll = async () => {
+    setSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      setSaveError("Session expired. Please sign in again.");
+      setSaving(false);
+      return;
+    }
+
+    const userId = sessionData.session.user.id;
+    const categoryMap: Record<CategoryKey, string> = {
+      work: "work_experience",
+      volunteering: "volunteering",
+      projects: "project",
+      school: "school",
+      awards: "award",
+      skills: "skill_blob",
+    };
+
+    const blobRows = (Object.keys(entries) as CategoryKey[])
+      .filter((key) => key !== "skills")
+      .flatMap((key) =>
+        entries[key].map((entry) => {
+          const title = entry.title.trim();
+          const description = entry.description.trim();
+          if (!title && !description) return null;
+          return {
+            user_id: userId,
+            category: categoryMap[key],
+            title: title || "Untitled",
+            description: description || "",
+          };
+        })
+      )
+      .filter(Boolean) as {
+      user_id: string;
+      category: string;
+      title: string;
+      description: string;
+    }[];
+
+    const skillRows = entries.skills
+      .map((entry) => {
+        const name = entry.title.trim() || entry.description.trim();
+        if (!name) return null;
+        return { user_id: userId, name };
+      })
+      .filter(Boolean) as { user_id: string; name: string }[];
+
+    const { error: blobError } =
+      blobRows.length > 0
+        ? await supabase.from("blobs").insert(blobRows)
+        : { error: null };
+    if (blobError) {
+      setSaveError("Could not save experience blobs. Please try again.");
+      setSaving(false);
+      return;
+    }
+
+    const { error: skillsError } =
+      skillRows.length > 0
+        ? await supabase.from("skills").insert(skillRows)
+        : { error: null };
+    if (skillsError) {
+      setSaveError("Could not save skills. Please try again.");
+      setSaving(false);
+      return;
+    }
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert({ user_id: userId, onboarding_complete: true });
+    if (profileError) {
+      setSaveError("Could not update profile status. Please try again.");
+      setSaving(false);
+      return;
+    }
+
+    setSaving(false);
+    setSaveSuccess(true);
+    router.replace("/dashboard");
   };
 
   if (!authChecked) {
@@ -280,14 +372,24 @@ export default function OnboardingPage() {
               type="button"
               onClick={handleNext}
               className="rounded-full bg-black px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-900"
+              disabled={saving}
             >
-              {currentIndex === categories.length - 1 ? "Finish" : "Next"}
+              {saving
+                ? "Saving..."
+                : currentIndex === categories.length - 1
+                  ? "Finish"
+                  : "Next"}
             </button>
           </div>
 
-          {submitted && (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-              Saved locally for now - wiring Supabase persistence is next.
+          {saveError && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {saveError}
+            </div>
+          )}
+          {saveSuccess && (
+            <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+              Saved to Supabase.
             </div>
           )}
         </div>
