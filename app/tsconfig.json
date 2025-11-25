@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "liquid-glass-react": ["./lib/liquid-glass-react"]
     }
   },
   "include": [
